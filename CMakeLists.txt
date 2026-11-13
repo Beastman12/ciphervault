@@ -40,6 +40,7 @@ add_library(ciphervault_core STATIC
     src/crypto/hmac.cpp
     src/crypto/pbkdf2.cpp
     src/crypto/random.cpp
+    src/crypto/secure_memory.cpp
     src/crypto/sha256.cpp
 )
 

@@ -145,10 +145,12 @@ bool run_filter_read(const char* command, std::string& output) {
     return pclose(pipe) == 0;
 }
 
+#if !defined(__APPLE__)
 bool has_command(const char* name) {
     std::string command = std::string("command -v ") + name + " >/dev/null 2>&1";
     return std::system(command.c_str()) == 0;
 }
+#endif
 
 bool write_clipboard(const std::string& text) {
 #if defined(__APPLE__)
