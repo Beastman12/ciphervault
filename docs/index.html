@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CipherVault — encrypted passwords, written in C++</title>
+<meta name="description" content="CipherVault is a local-first password manager in C++17 with a from-scratch AES-256-GCM and PBKDF2 implementation, authenticated encryption, and a polished CLI.">
+<meta name="theme-color" content="#0b0f14">
+<style>
+  :root {
+    --bg: #0b0f14;
+    --bg-soft: #111820;
+    --card: #141d27;
+    --line: #223040;
+    --text: #e6edf3;
+    --muted: #93a4b8;
+    --accent: #35d39a;
+    --accent-2: #5cc8ff;
+    --amber: #f3c969;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { width: min(1120px, calc(100% - 48px)); margin: 0 auto; }
+
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(11, 15, 20, 0.82);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+  .brand .mark {
+    display: grid; place-items: center;
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #04110c; font-weight: 800; font-family: var(--mono); font-size: 15px;
+  }
+  .nav-links { display: flex; gap: 26px; font-size: 14px; }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+  @media (max-width: 720px) { .nav-links { display: none; } }
+
+  .hero { padding: 86px 0 56px; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -20% 30% 40% -10%;
+    background: radial-gradient(600px 360px at 20% 20%, rgba(53, 211, 154, 0.14), transparent 70%);
+    pointer-events: none;
+  }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(53, 211, 154, 0.35);
+    background: rgba(53, 211, 154, 0.07); padding: 6px 12px; border-radius: 999px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  h1 {
+    font-size: clamp(42px, 7vw, 76px); line-height: 1.02; letter-spacing: -0.045em;
+    margin: 22px 0 18px; max-width: 880px;
+  }
+  h1 .grad {
+    background: linear-gradient(100deg, var(--accent) 10%, var(--accent-2) 90%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 660px; margin: 0 0 30px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
+    border: 1px solid var(--line); color: var(--text);
+    transition: transform .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #04110c; }
+  .btn.primary:hover { background: #4be3ad; }
+  .btn.ghost { background: var(--bg-soft); }
+  .btn.ghost:hover { border-color: #3a4d63; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 34px; }
+  .chip {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    border: 1px solid var(--line); background: var(--bg-soft);
+    padding: 6px 10px; border-radius: 7px;
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  section { padding: 64px 0; }
+  .section-head { max-width: 620px; margin-bottom: 34px; }
+  .kicker { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
+  h2 { font-size: clamp(28px, 4vw, 38px); letter-spacing: -0.03em; line-height: 1.15; margin: 10px 0 12px; }
+  .section-head p { color: var(--muted); margin: 0; }
+
+  .terminal {
+    background: #0d141b; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  }
+  .term-bar {
+    display: flex; align-items: center; gap: 8px; padding: 12px 16px;
+    background: #0a1016; border-bottom: 1px solid var(--line);
+  }
+  .light { width: 11px; height: 11px; border-radius: 50%; }
+  .term-title { margin-left: 8px; font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .terminal pre {
+    margin: 0; padding: 22px 20px 26px; overflow-x: auto;
+    font-family: var(--mono); font-size: 13px; line-height: 1.75; color: #c9d6e4;
+  }
+  .terminal .p { color: var(--accent); }
+  .terminal .c { color: var(--text); font-weight: 600; }
+  .terminal .g { color: var(--accent); }
+  .terminal .y { color: var(--amber); }
+  .terminal .d { color: #6d8095; }
+  .terminal .r { color: #ff7a85; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: linear-gradient(180deg, var(--card), #111922);
+    border: 1px solid var(--line); border-radius: 12px; padding: 22px;
+    transition: border-color .18s ease, transform .18s ease;
+  }
+  .card:hover { border-color: #34506b; transform: translateY(-2px); }
+  .card .icon {
+    width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    background: rgba(92, 200, 255, 0.1); border: 1px solid rgba(92, 200, 255, 0.22);
+    font-family: var(--mono); color: var(--accent-2); font-size: 15px; margin-bottom: 14px;
+  }
+  .card h3 { font-size: 16px; margin: 0 0 7px; letter-spacing: -0.01em; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .security-wrap { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 28px; align-items: start; }
+  @media (max-width: 900px) { .security-wrap { grid-template-columns: 1fr; } }
+  .flow { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+  .flow-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+  .flow-row .node {
+    flex: 1; border: 1px solid var(--line); background: #0f1720; border-radius: 8px;
+    padding: 9px 12px; font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+  .flow-row .node b { color: var(--text); }
+  .flow-row .arrow { color: var(--accent); font-family: var(--mono); }
+  .flow-note { margin-top: 14px; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 13px; }
+  .checklist li { display: flex; gap: 11px; color: var(--muted); font-size: 14px; }
+  .checklist li b { color: var(--text); font-weight: 600; }
+  .check {
+    flex: none; width: 18px; height: 18px; margin-top: 2px; border-radius: 5px;
+    background: rgba(53, 211, 154, 0.12); border: 1px solid rgba(53, 211, 154, 0.35);
+    color: var(--accent); font-size: 11px; display: grid; place-items: center; font-weight: 700;
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--bg-soft); }
+  .stat .num { font-family: var(--mono); font-size: clamp(26px, 4vw, 36px); color: var(--text); letter-spacing: -0.03em; }
+  .stat .lbl { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+  .build { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: stretch; }
+  @media (max-width: 860px) { .build { grid-template-columns: 1fr; } }
+  .code-box { background: #0d141b; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .code-head { padding: 10px 16px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--muted); background: #0a1016; }
+  .code-box pre { margin: 0; padding: 18px; overflow-x: auto; font-family: var(--mono); font-size: 13px; color: #c9d6e4; line-height: 1.7; }
+  .code-box .cmt { color: #6d8095; }
+  .code-box .cmd { color: var(--accent); }
+
+  footer { border-top: 1px solid var(--line); padding: 34px 0 46px; color: var(--muted); font-size: 13px; }
+  .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; }
+  .foot-links { display: flex; gap: 20px; flex-wrap: wrap; }
+  .foot a { color: var(--muted); }
+  .foot a:hover { color: var(--text); }
+  .fine { margin-top: 18px; color: #6d8095; font-size: 12px; max-width: 760px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 12px; top: 12px; background: var(--accent); color: #04110c; padding: 8px 12px; border-radius: 6px; z-index: 100; }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header>
+  <div class="wrap">
+    <nav aria-label="Main">
+      <a class="brand" href="#top">
+        <span class="mark" aria-hidden="true">CV</span>
+        CipherVault
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#security">Security</a>
+        <a href="#build">Build</a>
+        <a href="https://github.com/Beastman12/ciphervault/blob/main/docs/SECURITY.md">Threat model</a>
+        <a href="https://github.com/Beastman12/ciphervault/blob/main/docs/FORMAT.md">File format</a>
+        <a href="https://github.com/Beastman12/ciphervault">GitHub</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div id="top"></div>
+
+  <div class="wrap">
+    <section class="hero" style="padding-bottom: 34px;">
+      <span class="eyebrow"><span class="dot"></span> C++17 · zero dependencies</span>
+      <h1>Passwords,<br><span class="grad">sealed in C++.</span></h1>
+      <p class="lede">
+        CipherVault is a local-first password manager built from scratch: its own AES-256-GCM,
+        PBKDF2, SHA-256 and HMAC. One authenticated file, one master password, no cloud.
+      </p>
+      <div class="actions">
+        <a class="btn primary" href="https://github.com/Beastman12/ciphervault">
+          View on GitHub <span aria-hidden="true">↗</span>
+        </a>
+        <a class="btn ghost" href="https://github.com/Beastman12/ciphervault/blob/main/docs/SECURITY.md">Read the security model</a>
+      </div>
+      <div class="chips" aria-label="Highlights">
+        <span class="chip"><b>AES-256-GCM</b> authenticated</span>
+        <span class="chip"><b>PBKDF2</b> 210,000 rounds</span>
+        <span class="chip"><b>43</b> unit tests</span>
+        <span class="chip"><b>FIPS / RFC / NIST</b> vectors</span>
+        <span class="chip"><b>0</b> third-party libraries</span>
+      </div>
+    </section>
+
+    <section aria-label="Terminal demonstration" style="padding-top: 10px;">
+      <div class="terminal">
+        <div class="term-bar">
+          <span class="light" style="background:#ff5f57"></span>
+          <span class="light" style="background:#febc2e"></span>
+          <span class="light" style="background:#28c840"></span>
+          <span class="term-title">ciphervault — PowerShell</span>
+        </div>
+<pre><span class="p">$</span> ciphervault init
+Creating a vault at C:\Users\you\AppData\Roaming\CipherVault\vault.spm
+The master password is never stored. There is no recovery if you lose it.
+
+Choose a master password: <span class="d">****************</span>
+Confirm master password:   <span class="d">****************</span>
+
+<span class="g">Vault created.</span>
+  Encryption: AES-256-GCM
+  KDF:        PBKDF2-HMAC-SHA256, 210000 rounds
+
+<span class="p">$</span> ciphervault add --title GitHub --username you@example.com --generate
+<span class="g">Added GitHub</span> <span class="d">(67a85bb6)</span>
+  Password: <span class="y">*Wnt4UEm!_,O2J!KAarb</span>
+  Strength: very strong (131 bits)
+
+<span class="p">$</span> ciphervault get github --copy
+<span class="g">Password copied to the clipboard.</span> <span class="d">Cleared in 30 seconds if unchanged.</span>
+
+<span class="p">$</span> ciphervault audit
+Vault audit
+  12 credential(s) checked
+  <span class="r">weak</span>      old-router (8 bits)
+  <span class="y">reused</span>    github, gitlab
+
+<span class="p">$</span> ciphervault selftest
+  <span class="g">[ok]</span> SHA-256 known answer
+  <span class="g">[ok]</span> AES-256 FIPS-197 known answer
+  <span class="g">[ok]</span> AES-256-GCM authentication tag
+  <span class="g">[ok]</span> PBKDF2-HMAC-SHA256 known answer
+  7 check(s) passed, 0 failed</pre>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-head">
+        <span class="kicker">What it does</span>
+        <h2>Everything a password manager needs. Nothing it doesn't.</h2>
+        <p>A complete credential workflow in a single native binary — designed to be small enough to read and serious enough to trust.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="icon" aria-hidden="true">⛨</div>
+          <h3>Authenticated encryption</h3>
+          <p>AES-256-GCM verifies the 128-bit tag before decrypting. Wrong password and tampering fail closed with the same error.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">⌗</div>
+          <h3>Hard key derivation</h3>
+          <p>PBKDF2-HMAC-SHA256 with 210,000 rounds and a random 16-byte salt. The iteration count and salt are authenticated as AAD.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">✦</div>
+          <h3>Strong generation</h3>
+          <p>Passwords come from the OS CSPRNG, with configurable length and character classes and at least one character from each selected class.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">⌕</div>
+          <h3>Fast retrieval</h3>
+          <p>AND-search across title, username, URL, notes and tags. Look up by full ID or unique prefix; copy without printing.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">✂</div>
+          <h3>Clipboard hygiene</h3>
+          <p>A detached helper clears the clipboard after 30 seconds — only if it still contains the same value, verified by digest.</p>
+        </div>
+        <div class="card">
+          <div class="icon" aria-hidden="true">⏱</div>
+          <h3>Crash-safe writes</h3>
+          <p>Temp file plus atomic replace, previous version kept as a backup, owner-only permissions on POSIX. A fresh nonce on every save.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="security">
+      <div class="section-head">
+        <span class="kicker">Under the hood</span>
+        <h2>The threat model is part of the design.</h2>
+        <p>Full details, including what CipherVault does <em>not</em> protect against, are in the <a href="https://github.com/Beastman12/ciphervault/blob/main/docs/SECURITY.md">security model</a>.</p>
+      </div>
+      <div class="security-wrap">
+        <div class="flow" aria-label="Key derivation and encryption flow">
+          <div class="flow-row">
+            <div class="node"><b>master password</b></div>
+          </div>
+          <div class="flow-row"><span class="arrow">↓</span></div>
+          <div class="flow-row">
+            <div class="node">PBKDF2-HMAC-SHA256<br><span style="color:#6d8095">210,000 rounds · 16-byte salt</span></div>
+          </div>
+          <div class="flow-row"><span class="arrow">↓</span></div>
+          <div class="flow-row">
+            <div class="node"><b>256-bit key</b></div>
+          </div>
+          <div class="flow-row"><span class="arrow">↓</span></div>
+          <div class="flow-row">
+            <div class="node">AES-256-GCM<br><span style="color:#6d8095">fresh 96-bit nonce · header as AAD</span></div>
+          </div>
+          <div class="flow-row"><span class="arrow">↓</span></div>
+          <div class="flow-row">
+            <div class="node"><b>CVLT</b> authenticated vault file</div>
+          </div>
+          <div class="flow-note">A single flipped bit anywhere in the file invalidates the tag.</div>
+        </div>
+        <ul class="checklist">
+          <li><span class="check" aria-hidden="true">✓</span><span><b>Header-as-AAD</b> binds magic, version, KDF id, rounds, salt, nonce and length to the tag.</span></li>
+          <li><span class="check" aria-hidden="true">✓</span><span><b>Fresh nonce per save</b> avoids the catastrophic nonce reuse that breaks GCM.</span></li>
+          <li><span class="check" aria-hidden="true">✓</span><span><b>Real re-keying</b> on password change: new salt, new key, and the stale <code>.bak</code> is deleted.</span></li>
+          <li><span class="check" aria-hidden="true">✓</span><span><b>Secrets wiped</b> with an optimizer-resistant <code>secure_zero</code>; clipboard helper sees only a digest.</span></li>
+          <li><span class="check" aria-hidden="true">✓</span><span><b>Constant-time comparison</b> for tags and master-password checks.</span></li>
+          <li><span class="check" aria-hidden="true">✓</span><span><b>Bounded parser</b> rejects truncation, trailing bytes, oversized fields and duplicate IDs.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section aria-label="Project statistics" style="padding-top: 12px;">
+      <div class="stats">
+        <div class="stat"><div class="num">43</div><div class="lbl">unit tests, 0 failures</div></div>
+        <div class="stat"><div class="num">5</div><div class="lbl">crypto primitives, all in-tree</div></div>
+        <div class="stat"><div class="num">42</div><div class="lbl">byte authenticated header</div></div>
+        <div class="stat"><div class="num">0</div><div class="lbl">third-party dependencies</div></div>
+      </div>
+    </section>
+
+    <section id="build">
+      <div class="section-head">
+        <span class="kicker">Get started</span>
+        <h2>Build it with CMake.</h2>
+        <p>CMake 3.16+ and any C++17 compiler. The same source builds on Windows, Linux and macOS.</p>
+      </div>
+      <div class="build">
+        <div class="code-box">
+          <div class="code-head">Terminal</div>
+<pre><span class="cmt"># clone and build</span>
+<span class="cmd">git clone</span> https://github.com/Beastman12/ciphervault.git
+<span class="cmd">cd</span> ciphervault
+<span class="cmd">cmake</span> -S . -B build -DCMAKE_BUILD_TYPE=Release
+<span class="cmd">cmake</span> --build build --config Release
+
+<span class="cmt"># verify the cryptography</span>
+<span class="cmd">./build/ciphervault</span> selftest
+
+<span class="cmt"># run the 43 unit tests</span>
+<span class="cmd">ctest</span> --test-dir build --output-on-failure</pre>
+        </div>
+        <div class="code-box">
+          <div class="code-head">A typical session</div>
+<pre><span class="cmd">ciphervault</span> init
+<span class="cmd">ciphervault</span> add --title GitHub --generate
+<span class="cmd">ciphervault</span> add --title Bank --username me --generate
+
+<span class="cmd">ciphervault</span> list
+<span class="cmd">ciphervault</span> search github
+<span class="cmd">ciphervault</span> get github --copy
+<span class="cmd">ciphervault</span> get bank --field username
+
+<span class="cmd">ciphervault</span> edit github --generate
+<span class="cmd">ciphervault</span> rm old-router --yes
+<span class="cmd">ciphervault</span> audit
+<span class="cmd">ciphervault</span> passwd
+<span class="cmd">ciphervault</span> backup D:\backups\vault.spm</pre>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>CipherVault 1.0.0 · MIT License · © 2026 Niranjan Parmatma Gupta</div>
+      <div class="foot-links">
+        <a href="https://github.com/Beastman12/ciphervault">Source</a>
+        <a href="https://github.com/Beastman12/ciphervault/blob/main/docs/SECURITY.md">Security model</a>
+        <a href="https://github.com/Beastman12/ciphervault/blob/main/docs/FORMAT.md">File format</a>
+        <a href="https://github.com/Beastman12/ciphervault/blob/main/README.md">README</a>
+      </div>
+    </div>
+    <p class="fine">
+      CipherVault is a portfolio-quality engineering project, not an audited product.
+      For high-value secrets, use a mature, independently audited password manager.
+    </p>
+  </div>
+</footer>
+</body>
+</html>

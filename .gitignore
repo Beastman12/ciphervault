@@ -1,0 +1,26 @@
+# Build output
+build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# Local vaults and exports - never commit secrets
+*.spm
+*.spm.bak
+*.backup-*
+vault*.csv
+export*.csv
+
+# Editors / OS
+.vs/
+.vscode/
+.idea/
+*.user
+Thumbs.db
+.DS_Store
+
+# Zig
+.zig-cache/
+zig-out/
