@@ -1,6 +1,7 @@
 #include "ciphervault/crypto/sha256.hpp"
 
 #include <cstring>
+#include <stdexcept>
 
 namespace ciphervault {
 namespace {

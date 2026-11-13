@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <system_error>
 
 #if defined(_WIN32)

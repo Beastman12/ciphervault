@@ -10,6 +10,7 @@ option(CIPHERVAULT_BUILD_TESTS "Build the unit test suite" ON)
 option(CIPHERVAULT_WERROR "Treat compiler warnings as errors" OFF)
 
 if(MSVC)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
     add_compile_options(/W4 /permissive- /utf-8)
     if(CIPHERVAULT_WERROR)
         add_compile_options(/WX)

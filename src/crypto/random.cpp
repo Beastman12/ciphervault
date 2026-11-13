@@ -1,6 +1,7 @@
 #include "ciphervault/crypto/random.hpp"
 
 #include <stdexcept>
+#include <string>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -10,7 +11,6 @@
 #elif defined(__linux__) || defined(__unix__)
 #include <cerrno>
 #include <fcntl.h>
-#include <string>
 #include <sys/random.h>
 #include <sys/stat.h>
 #include <sys/types.h>
