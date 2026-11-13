@@ -115,7 +115,7 @@ ciphervault [global options] <command> [options]
 
 Global options: `--vault <path>`, `--no-color`, `-h/--help`, `-V/--version`.
 
-The default vault is `%APPDATA%\CipherVault\vault.spm` on Windows and `~/.local/share/ciphervault/vault.spm` on Linux/macOS, overridable with `--vault` or `CIPHERVAULT_PATH`. The master password can be supplied via `CIPHERVAULT_MASTER` for scripted use (a warning is printed — this is development-only, since environment variables leak to child processes).
+The default vault is `%APPDATA%\CipherVault\vault.spm` on Windows, `~/Library/Application Support/CipherVault/vault.spm` on macOS, and `${XDG_DATA_HOME:-~/.local/share}/ciphervault/vault.spm` on Linux, overridable with `--vault` or `CIPHERVAULT_PATH`. The master password can be supplied via `CIPHERVAULT_MASTER` for scripted use (a warning is printed — this is development-only, since environment variables leak to child processes).
 
 ## Security design
 
